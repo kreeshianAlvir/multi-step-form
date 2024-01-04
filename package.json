@@ -2,6 +2,7 @@
   "name": "multi-step-form",
   "private": true,
   "version": "0.0.0",
+  "homepage": "https://kreeshianalvir.github.io/multi-step-form/",
   "type": "module",
   "scripts": {
     "predeploy": "npm run build",
