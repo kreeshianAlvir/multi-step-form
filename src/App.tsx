@@ -17,8 +17,9 @@ import {
   TextField,
   Typography,
   Snackbar,
-  Alert,
 } from "@mui/material";
+
+import MuiAlert, { AlertProps } from "@mui/material/Alert";
 
 // pricing icons
 import ArcadeIcon from "./assets/images/icon-arcade.svg";
@@ -28,8 +29,11 @@ import ThankYouIcon from "./assets/images/icon-thank-you.svg";
 
 import * as React from "react";
 
-const MuiAlert = React.forwardRef(function Alert(props, ref) {
-  return <Alert elevation={6} ref={ref} variant="filled" {...props} />;
+const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(
+  props,
+  ref
+) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
 const steps = [
@@ -101,10 +105,11 @@ const AntSwitch = styled(Switch)(({ theme }) => ({
 }));
 
 // function for number only
-const numberOnly = (e: React.FormEvent<HTMLInputElement>) => {
-  const val = e.key;
-  const ctrl = e.ctrlKey;
-  const shift = e.shiftKey;
+const numberOnly = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const val = event.key;
+  const ctrl = event.ctrlKey;
+  const shift = event.shiftKey;
+  const target = event.target as HTMLInputElement;
   const keyExceptions = ["Backspace", "ArrowLeft", "ArrowRight"];
   if (
     val.match(/\d/g) === null &&
@@ -112,11 +117,13 @@ const numberOnly = (e: React.FormEvent<HTMLInputElement>) => {
     ctrl === false &&
     shift === false
   ) {
-    e.preventDefault();
+    event.preventDefault();
   } else if (ctrl && val === "a") {
-    e.target.setSelectionRange(0, e.target.value.length);
+    if (target) {
+      target.setSelectionRange(0, target.value.length);
+    }
   } else if (shift && val !== "ArrowLeft" && val !== "ArrowRight") {
-    e.preventDefault();
+    event.preventDefault();
   }
 };
 
@@ -134,6 +141,12 @@ interface FormDetails {
   billingTypePrice: number | undefined;
   addOns: AddOns[];
   total: number | undefined;
+}
+
+interface Toast {
+  open: boolean;
+  message: string;
+  severity: string;
 }
 
 const pricingList = [
@@ -195,23 +208,21 @@ function App() {
     total: 0,
   });
   const [displayThankyouSection, setDisplayThankyouSection] = useState(false);
-  const [toast, setToast] = useState({
+  const [toast, setToast] = useState<Toast>({
     open: false,
-    vertical: "top",
-    horizontal: "center",
     message: "",
     severity: "info",
   });
 
-  const handleEditPersonalInfo = (e: React.FormEvent<HTMLInputElement>) => {
-    const { name, value } = e.currentTarget;
+  const handleEditPersonalInfo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setCompletedForm({ ...completedForm, [name]: value });
   };
 
   const handleRemoveErrorFieldStyle = (
-    e: React.FormEvent<HTMLInputElement>
+    e: React.FocusEvent<HTMLInputElement>
   ) => {
-    const { name } = e.currentTarget;
+    const { name } = e.target;
     const field = document.querySelectorAll(`[name=${name}]`);
     field.forEach((fieldElem) => {
       fieldElem?.closest(".text-field")?.classList.remove("error");
@@ -227,15 +238,15 @@ function App() {
       completedForm.billingTypeTime === "monthly" ? monthly : yearly;
     let total = price;
     // check if user already selected add ons
+    const addOnsListPrice = completedForm.addOns.map((n) => {
+      return n.price;
+    });
     if (completedForm.addOns.length !== 0) {
-      const addOnsListTotalPrice = completedForm.addOns
-        .map((n) => {
-          return n.price;
-        })
-        .reduce((num, total) => {
-          return total + num;
-        });
-      total = price + addOnsListTotalPrice;
+      const addOnsPrice = addOnsListPrice.reduce((num, total) => {
+        return total + num;
+      });
+
+      total = price + addOnsPrice;
     }
 
     setCompletedForm({
@@ -247,7 +258,7 @@ function App() {
   };
 
   const handleChangeBillingTypeTime = (
-    e: React.FormEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { checked } = e.target;
     const billingType = pricingList.find(
@@ -773,12 +784,15 @@ function App() {
         open={toast.open}
         autoHideDuration={3000}
         anchorOrigin={{
-          vertical: toast.vertical,
-          horizontal: toast.horizontal,
+          vertical: "top",
+          horizontal: "center",
         }}
         onClose={handleClose}
       >
-        <Alert severity={toast.severity} sx={{ width: "100%" }}>
+        <Alert
+          severity={toast["severity" as keyof Toast]}
+          sx={{ width: "100%" }}
+        >
           {toast.message}
         </Alert>
       </Snackbar>
