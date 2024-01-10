@@ -143,10 +143,12 @@ interface FormDetails {
   total: number | undefined;
 }
 
+type Color = "success" | "error" | "info" | "warning";
+
 interface Toast {
   open: boolean;
   message: string;
-  severity: string;
+  severity: Color;
 }
 
 const pricingList = [
@@ -238,11 +240,13 @@ function App() {
       completedForm.billingTypeTime === "monthly" ? monthly : yearly;
     let total = price;
     // check if user already selected add ons
-    const addOnsListPrice = completedForm.addOns.map((n) => {
-      return n.price;
+    const arr: number[] = [];
+    completedForm.addOns.forEach((n: AddOns) => {
+      arr.push(n.price!);
     });
+
     if (completedForm.addOns.length !== 0) {
-      const addOnsPrice = addOnsListPrice.reduce((num, total) => {
+      const addOnsPrice = arr.reduce((num, total) => {
         return total + num;
       });
 
@@ -278,9 +282,9 @@ function App() {
           return n.price;
         })
         .reduce((num, total) => {
-          return total + num;
+          return total! + num!;
         });
-      total = billingPrice + addOnTotal;
+      total = billingPrice! + addOnTotal!;
     }
 
     setCompletedForm({
@@ -312,9 +316,9 @@ function App() {
           return n.price;
         })
         .reduce((num, total) => {
-          return total + num;
+          return total! + num!;
         });
-      total = completedForm.billingTypePrice + addOnsListTotalPrice;
+      total = completedForm.billingTypePrice! + addOnsListTotalPrice!;
     }
 
     setCompletedForm({
@@ -585,10 +589,16 @@ function App() {
         case 2:
           {
             const { billingType } = completedForm;
-            const { monthly, yearly } = pricingList.find(
+            const pricingListItem = pricingList.find(
               (n) => n.type.toLowerCase() === billingType.toLowerCase()
             );
-            handleChangeBillingType(billingType, monthly, yearly);
+            if (pricingListItem) {
+              handleChangeBillingType(
+                billingType,
+                pricingListItem.monthly,
+                pricingListItem.yearly
+              );
+            }
           }
           break;
         case 3:
@@ -628,7 +638,7 @@ function App() {
     if (reason === "clickaway") {
       return;
     }
-
+    console.info(event);
     setToast({ ...toast, open: false });
   };
 
@@ -789,10 +799,7 @@ function App() {
         }}
         onClose={handleClose}
       >
-        <Alert
-          severity={toast["severity" as keyof Toast]}
-          sx={{ width: "100%" }}
-        >
+        <Alert severity={toast?.severity || "info"} sx={{ width: "100%" }}>
           {toast.message}
         </Alert>
       </Snackbar>
